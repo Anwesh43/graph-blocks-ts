@@ -117,7 +117,13 @@ class GBNode {
     }
     
     draw(context : CanvasRenderingContext2D) {
-        DrawingUtil.drawNode(context, this.state.scale, this.x, this.y, )
+        DrawingUtil.drawNode(context, this.state.scale, this.x, this.y)
+        if (this.down) {
+            this.down.draw(context)
+        }
+        if (this.right) {
+            this.right.draw(context)
+        }
     }
 
     update(cb : Function) {
@@ -136,4 +142,50 @@ class GBNode {
             cb(this.down)
         }
     }
+}
+
+class GraphBlock {
+
+    queue : Array<GBNode> = []
+    root : GBNode = new GBNode(0, 0)
+
+    constructor() {
+        this.queue.push(this.root)
+    }
+    draw(context : CanvasRenderingContext2D) {
+        this.root.draw(context)
+    }
+
+    update(cb : Function) {
+        const n = this.queue.length 
+        let k = 0 
+        for (let i = 0; i < n; i++) {
+            this.queue[i].update(() => {
+                k++
+                if (k == n) {
+                    cb()
+                    this.remove(n)
+                }
+            })
+        }
+    }
+
+    remove(n : number) {
+        const nodes : Array<GBNode> = this.queue.splice(0, n)
+        nodes.forEach((node : GBNode ) => {
+            this.queue.push(node)
+        })
+    } 
+
+    startUpdating(cb : Function) {
+        const n : number = this.queue.length 
+        for (let i = 0; i < 4; i++) {
+            this.queue[i].startUpdating(() => {
+                if (i == 0) {
+                    cb()
+                }
+            })
+        }
+    }
+
 }
