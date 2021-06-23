@@ -4,8 +4,9 @@ const color : string = "#3F51B5"
 const sizeFactor : number = 5.6 
 const delay : number = 20 
 const backColor : string = "#BDBDBD"
-const blocks : number = 30 
+const blocks : number = 10 
 const scGap : number = 0.02 
+const blockSet : Record<string, GBNode> = {}
 
 class DrawingUtil {
 
@@ -37,6 +38,10 @@ class Stage {
     render() {
         this.context.fillStyle = backColor 
         this.context.fillRect(0, 0, w, h)
+        this.context.fillStyle = color 
+        this.context.strokeStyle = color
+        this.context.lineCap = 'round'
+        this.context.lineWidth = Math.min(w, h) / 90
         this.renderer.render(this.context)
     }
 
@@ -49,6 +54,7 @@ class Stage {
     }
 
     static init() {
+        console.log("initialized")
         const stage : Stage = new Stage()
         stage.initCanvas()
         stage.render()
@@ -112,22 +118,48 @@ class GBNode {
 
     addNeighbor() {
         const size : number = DrawingUtil.getSize()
+
         if (this.y < h - size) {
-            this.down = new GBNode(this.x, this.y + size)
+            
+            const key = `${this.x}, ${this.y + size}`
+            //console.log(`down_${key}`)
+        
+            if (!blockSet[key]) {
+                this.down = new GBNode(this.x, this.y + size)
+                blockSet[key] = this.down 
+            } else {
+
+                this.down = blockSet[key]
+            }
         }
         if (this.x < w - size) {
-            this.right = new GBNode(this.x + size, this.y)
+                
+            const key = `${this.x + size}, ${this.y}`
+            //console.log(`right_${key}`)
+            if (!blockSet[key]) {
+                this.right = new GBNode(this.x + size, this.y)
+                blockSet[key] = this.right  
+            } else {
+                this.right = blockSet[key]
+            }
         }
     }
     
-    draw(context : CanvasRenderingContext2D) {
+    draw(context : CanvasRenderingContext2D, drawnSet : Record<string, boolean>) {
+        if (drawnSet[`${this.x}, ${this.y}`]) {
+            return 
+        }
+        // if (this.state.scale > 0 && this.state.scale < 1) {
+        //     console.log(`${this.x}, ${this.y}`, this.state.scale)
+        // }
         DrawingUtil.drawNode(context, this.state.scale, this.x, this.y)
         if (this.down) {
-            this.down.draw(context)
+            this.down.draw(context, drawnSet)
         }
         if (this.right) {
-            this.right.draw(context)
+            this.right.draw(context, drawnSet)
         }
+        drawnSet[`${this.x}, ${this.y}`] = true 
     }
 
     update(cb : Function) {
@@ -146,18 +178,24 @@ class GBNode {
             cb(this.down)
         }
     }
+
+    getKey() : string {
+        return `${this.x}, ${this.y}`
+    }
 }
 
 class GraphBlock {
 
     queue : Array<GBNode> = []
     root : GBNode = new GBNode(0, 0)
+    visited : Record<string, boolean> = {}
 
     constructor() {
         this.queue.push(this.root)
+        this.visited[this.root.getKey()] = true
     }
     draw(context : CanvasRenderingContext2D) {
-        this.root.draw(context)
+        this.root.draw(context, {})
     }
 
     update(cb : Function) {
@@ -176,14 +214,21 @@ class GraphBlock {
 
     remove(n : number) {
         const nodes : Array<GBNode> = this.queue.splice(0, n)
-        nodes.forEach((node : GBNode ) => {
-            this.queue.push(node)
+        nodes.forEach((parent : GBNode ) => {
+            parent.consumeNeighbors((node : GBNode) => {
+                
+                const key = node.getKey()
+                if (!this.visited[key]) {
+                    this.queue.push(node)
+                    this.visited[key] = true
+                }
+            })
         })
     } 
 
     startUpdating(cb : Function) {
         const n : number = this.queue.length 
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < n; i++) {
             this.queue[i].startUpdating(() => {
                 if (i == 0) {
                     cb()
