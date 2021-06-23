@@ -5,7 +5,7 @@ const sizeFactor : number = 5.6
 const delay : number = 20 
 const backColor : string = "#BDBDBD"
 const blocks : number = 10 
-const scGap : number = 0.02 
+const scGap : number = 0.05
 const blockSet : Record<string, GBNode> = {}
 
 class DrawingUtil {
@@ -224,6 +224,13 @@ class GraphBlock {
                 }
             })
         })
+        
+        console.log("QUEUE_SIZE", this.queue.length)
+        if (this.queue.length == 0) {
+            this.visited = {}
+            this.queue.push(this.root)
+            this.visited[this.root.getKey()] = true
+        }
     } 
 
     startUpdating(cb : Function) {
