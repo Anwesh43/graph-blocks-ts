@@ -9,8 +9,12 @@ const scGap : number = 0.02
 
 class DrawingUtil {
 
+    static getSize() {
+        return Math.min(w, h) / blocks   
+    }
+
     static drawNode(context : CanvasRenderingContext2D, scale : number, x : number, y : number) {
-        const size : number = Math.min(w, h) / blocks 
+        const size : number = DrawingUtil.getSize()
         context.strokeRect(x, y, size, size)
         context.fillRect(x, y, size, size * scale)
     }
@@ -88,6 +92,48 @@ class Animator {
         if (this.animated) {
             this.animated = false 
             clearInterval(this.interval)
+        }
+    }
+}
+
+class GBNode {
+
+    down : GBNode 
+    right : GBNode 
+    state : State = new State()
+
+    constructor(private x : number, private y : number) {
+        this.addNeighbor()       
+    }
+
+    addNeighbor() {
+        const size : number = DrawingUtil.getSize()
+        if (this.y < h - size) {
+            this.down = new GBNode(this.x, this.y + size)
+        }
+        if (this.x < w - size) {
+            this.right = new GBNode(this.x + size, this.y)
+        }
+    }
+    
+    draw(context : CanvasRenderingContext2D) {
+        DrawingUtil.drawNode(context, this.state.scale, this.x, this.y, )
+    }
+
+    update(cb : Function) {
+        this.state.update(cb)
+    }
+
+    startUpdating(cb : Function) {
+        this.state.startUpdating(cb)
+    }
+
+    consumeNeighbors(cb : Function) {
+        if (this.right) {
+            cb(this.right)
+        }
+        if (this.down) {
+            cb(this.down)
         }
     }
 }
