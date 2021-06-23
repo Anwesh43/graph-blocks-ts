@@ -189,3 +189,25 @@ class GraphBlock {
     }
 
 }
+
+class Renderer {
+
+    graphBlock : GraphBlock = new GraphBlock()
+    animator : Animator = new Animator()
+
+    render(context : CanvasRenderingContext2D) {
+        this.graphBlock.draw(context)    
+    }
+
+    handleTap(cb : Function) {
+        this.graphBlock.startUpdating(() => {
+            this.animator.start(() => {
+                cb()
+                this.graphBlock.update(() => {
+                    this.animator.stop()
+                    cb()
+                })
+            })
+        })
+    }
+}
